@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:xtracker/LoginPage.dart';
+import 'package:xtracker/ProfilePage.dart';
 
 class HomePage extends StatefulWidget {
+
+  final String? user_id;
+
+  const HomePage(this.user_id);
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -11,16 +18,20 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> _expenses = [];
   bool _isLoading = true;
 
+
   Future<void> _fetchExpenses() async {
     setState(() {
       _isLoading=true;
     });
 
     try {
-      final response = await _supabase.from('expenses').select().order('date', ascending: false);
+      if (widget.user_id != null) {
+        final userId = widget.user_id as String;
+        final response = await _supabase.from('expenses').select().eq('user_id', userId).order('date', ascending: false);
         setState(() {
           _expenses = response as List<Map<String, dynamic>>;
         });
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error loading expenses record.")));
     } finally {
@@ -107,7 +118,6 @@ Future<void> _confirmDelete1(BuildContext context, int id) async {
   }
 
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,27 +135,19 @@ Future<void> _confirmDelete1(BuildContext context, int id) async {
           PopupMenuButton<String>(
             onSelected: (value) {
               // Handle the selected value
-              if (value == 'Option 1') {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Option 1 selected')),
-                );
-              } else if (value == 'Option 2') {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Option 2 selected')),
-                );
+              if (value == 'Profile') {
+                print(widget.user_id);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
               } else if (value == 'Logout') {
-                Navigator.pop(context); // Example: Logout action
+                // Navigator.pop(context);
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage())); // Example: Logout action
               }
             },
             itemBuilder: (BuildContext context) {
               return [
                 PopupMenuItem(
-                  value: 'Option 1',
-                  child: Text('Option 1'),
-                ),
-                PopupMenuItem(
-                  value: 'Option 2',
-                  child: Text('Option 2'),
+                  value: 'Profile',
+                  child: Text('Profile'),
                 ),
                 PopupMenuDivider(), // Optional: Adds a divider
                 PopupMenuItem(
@@ -165,52 +167,52 @@ Future<void> _confirmDelete1(BuildContext context, int id) async {
               itemCount: _expenses.length,
               itemBuilder: (context, index) {
                 final expense = _expenses[index];
-                // return Dismissible(
-                //     key: Key(expense['id'].toString()),
-                //     direction: DismissDirection.endToStart,
-                //     background: Container(
-                //       color: Colors.red,
-                //       alignment: Alignment.centerRight,
-                //       padding: EdgeInsets.symmetric(horizontal: 20.0),
-                //       child: Icon(Icons.delete, color: Colors.white),
-                //     ),
-                //     confirmDismiss: (direction) => _confirmDelete(context, expense['id']),
-                //     onDismissed: (direction) {
-                //       _deleteExpense(expense['id']); 
-                //       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Record deleted.")));
-                //     },
-                //     child: Card(
-                //       child: ListTile(
-                //         title: Text(expense['expense_name']),
-                //         subtitle: Text('Date: ${expense['date']} - Type: ${expense['type']}'),
-                //         trailing: Text(
-                //           'Php ${expense['amount'].toStringAsFixed(2)}',
-                //           style: TextStyle(
-                //             fontWeight: FontWeight.bold,
-                //             color: Colors.green,
-                //           ),
-                //         ),
-                //         onTap: () => _addOrUpdateExpense(expense),
-                //       ),
-                //     ),
-                //   );
-                
-                return Card(
-                  child: ListTile(
-                    title: Text(expense['expense_name']),
-                    subtitle: Text(
-                        'Date: ${expense['date']} - Type: ${expense['type']}'),
-                    trailing: Text(
-                      'Php${expense['amount'].toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                return Dismissible(
+                    key: Key(expense['id'].toString()),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Icon(Icons.delete, color: Colors.white),
+                    ),
+                    confirmDismiss: (direction) => _confirmDelete(context, expense['id']),
+                    onDismissed: (direction) {
+                      _deleteExpense(expense['id']); 
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Record deleted.")));
+                    },
+                    child: Card(
+                      child: ListTile(
+                        title: Text(expense['expense_name']),
+                        subtitle: Text('Date: ${expense['date']} - Type: ${expense['type']}'),
+                        trailing: Text(
+                          'Php ${expense['amount'].toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                        onTap: () => _addOrUpdateExpense(expense),
                       ),
                     ),
-                    onTap: () => _addOrUpdateExpense(expense),
-                    onLongPress: () => _confirmDelete1(context, expense['id']),
-                  ),
-                );
+                  );
+                
+                // return Card(
+                //   child: ListTile(
+                //     title: Text(expense['expense_name']),
+                //     subtitle: Text(
+                //         'Date: ${expense['date']} - Type: ${expense['type']}'),
+                //     trailing: Text(
+                //       'Php${expense['amount'].toStringAsFixed(2)}',
+                //       style: TextStyle(
+                //         fontWeight: FontWeight.bold,
+                //         color: Colors.green,
+                //       ),
+                //     ),
+                //     onTap: () => _addOrUpdateExpense(expense),
+                //     onLongPress: () => _confirmDelete1(context, expense['id']),
+                //   ),
+                // );
               },
             ),
     );

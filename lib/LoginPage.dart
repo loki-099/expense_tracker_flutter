@@ -29,10 +29,12 @@ class _LoginPageState extends State<LoginPage> {
         email: email,
         password: password,
       );
+      final userId = response.user?.id;
       if (response.user != null) {
+        print("USER ID: $userId");
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomePage()),
+          MaterialPageRoute(builder: (context) => HomePage(userId)),
         );
       }
     } on AuthException catch (e) {
